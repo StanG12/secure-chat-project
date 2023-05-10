@@ -2,6 +2,7 @@ const path = require("path");
 const http = require("http");
 const express = require("express");
 const socketio = require("socket.io");
+const crypto = require('crypto');
 const formatMessage = require("./utils/messages");
 // const createAdapter = require("@socket.io/redis-adapter").createAdapter;
 //const redis = require("redis");
@@ -31,6 +32,14 @@ const botName = "CPE-Silent Bot";
 // })();
 
 // Run when client connects
+
+
+
+/* ---------------------------------------------------------------------------------------------------*/
+
+
+/*---------------------------------------------------------------------------------------------------*/
+
 io.on("connection", (socket) => {
   console.log(io.of("/").adapter);
   socket.on("joinRoom", ({ username, room }) => {
@@ -59,8 +68,15 @@ io.on("connection", (socket) => {
   // Listen for chatMessage
   socket.on("chatMessage", (msg) => {
     const user = getCurrentUser(socket.id);
-
-    io.to(user.room).emit("message", formatMessage(user.username, msg));
+    
+     // Encrypt the message using a secret key
+    const aes256 = require('aes256');
+    const secretKey = process.env.SECRET_KEY || 'my-secret-key';
+    const encrypted = aes256.encrypt(secretKey, msg);
+    const decrypted = aes256.decrypt(secretKey, encrypted);
+    const plaintext = msg;
+    console.table({ plaintext ,encrypted, decrypted });
+    io.to(user.room).emit("message", formatMessage(user.username, encrypted));
   });
 
   // Runs when client disconnects
